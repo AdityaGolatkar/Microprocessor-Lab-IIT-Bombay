@@ -1,0 +1,2 @@
+ Initialize the Stack pointer correctly.
+ While using a port as iput make sure that you give a high signal to all the terminal of the port.

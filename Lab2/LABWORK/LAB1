@@ -1,0 +1,67 @@
+ORG 0000H
+LJMP MAIN
+
+;R0 and R1 should contain the address of two no.s
+;location given by R0:- 		MSB of 1st no.
+;location given by R0+1:-	LSB of 1st no.
+;location given by R1:- 		MSB of 1st no.
+;location given by R1+1:-	LSB of 1st no.
+;location given by R0+2:- 	CARRY	
+;location given by R0+3:-	MSB OF ANS	
+;location given by R0+4:- 	LSB OF ANS
+
+;---------------------------------------------------------;
+;this function adds and stores result in appropriate location
+ADDER_8BIT:
+
+	MOV A,R2
+	ADD A,R2+1
+	MOV R2+2,A
+
+ADDER_16BIT:
+	;-- push the registers which will be affected by this subroutine 
+	;	but will be needed later 	
+	
+	;-- perform the addition/subtraction of 2 16-bit no.s
+	;-- you may use subroutine wrtten for addition of 2 8-bit no.s
+	;-- remember the no.s are given in 2's complement form
+	
+	;-- take care when you set carry/borrow.
+	
+	;-- store the result at appropriate locations.
+	
+	INC R0
+	MOV A,@R0
+	INC R1
+	ADD A,@R1
+	INC R0
+	INC R0
+	ADDC A,R1
+	MOV R0+3,A
+	MOV A,#00H
+	ADDC A,#00H
+	MOV R0+2,A
+	
+	RETURN:	
+	;-- pop the registers
+	RET
+
+INIT:
+	;-- store the numbers to be added/subtracted at appropriate location
+	MOV 50H,#10H
+	MOV R0,#50H
+	MOV 51H,#20H
+	
+	MOV 52H,30H
+	MOV R1,#52H
+	MOV 53H,#40H
+	
+	RET
+
+
+ORG 0100H
+MAIN:
+	MOV SP,#0C0H	;move stack pointer to indirect RAM location
+	ACALL INIT
+	ACALL ADDER_16BIT
+END

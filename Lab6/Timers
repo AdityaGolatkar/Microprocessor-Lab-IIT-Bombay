@@ -1,0 +1,313 @@
+1
+ Timer/counters in 8051
+The 8051 has two timers T0 and T1, which may be configured and used individ-
+ually. The 8052 has an additional Timer T2.
+All these counters count up on negative going edges at their inputs. These can
+be used as event counters (where they count the number of negative transitions
+on a pin connected to some external source), or as Timers, where they count up
+once every twelfth clock cycle. A special use of timers is for generating baud rates
+for the serial port.
+The usage of these timers is somewhat different from common general pur-
+pose timer/counters such as the 8253 and 8254. This difference stems partly from
+the fact that we cannot afford to have a large numbers of pins dedicated to the
+functioning of these timer counters. Thus, just two multifunction pins are used
+as external inputs in 8051. Gating is accomplished by control bits in the special
+function registers, and using the external interrupt pins as gate inputs. There are
+no output pins associated with the timers. The processor can be interrupted by
+the timers and as a part of the interrupt service routine, the processor can perform
+any IO function through its ports. When used as baud rate generators, the output
+goes directly to the serial port hardware within the microcomputer.
+8051 timers always count up. Each counter has a 16 bit count register in the
+SFR area. The low and high bytes can be accessed as separate bytes. When their
+count rolls over from the maximum count to 0000, they set the corresponding
+timer flag (TF1 or TF0) in TCON.
+The 8051 can be set up so that an interrupt occurs whenever TF1 or TF0 is
+set. When 8051 branches to the interrupt vector, it automatically clears the TF
+flag.
+1.1
+ Timer Functions
+When used as timers, the 8051 timers count up every 12th clock cycle. Thisselected by clearing the corresponding C/T flags in the TMOD special function
+register, placed at the address 89H.
+1.2
+ External Event Counting
+Port P3 of 8051 is a multi-function port. Different lines of this port carry out
+functions which are additional to data input-output on the port.
+Additional functions of Port 3 lines
+Port Line
+ P3.7
+ P3.6
+ P3.5
+ P3.4
+ P3.3
+ P3.2
+ P3.1
+ P3.0
+Function
+ RD
+ WR
+ T1 in
+ T0 in
+ INT1
+ INT0
+ TxD
+ RxD
+Lines P3.5 and P3.4 can be used as inputs to Timers T1 and T0 respectively.
+If the C/T flag of a timer is set, the corresponding line is sampled once every
+machine cycle. The count is advanced when a negative step is noticed on the
+line: this involves sampling a high level in one cycle and a low one on the next.
+Since each machine cycle takes 12 clock cycles, the fastest event counting rateclock frequency/24.
+2
+ Special Function Registers
+The functioning of these timers is controlled through several special function reg-
+isters.
+TCON register at BYTE address 88H
+Bit No.
+ 7
+ 6
+ 5
+ 4
+ 3
+ 2
+ 1
+ 0
+Bit Name
+ TF1 TR1
+ TF0
+ TR0 IE1
+ IT1
+ IE0
+ IT0
+Bit Addr
+ 8F
+ 8E
+ 8D
+ 8C
+ 8B
+ 8A
+ 89
+ 88
+TMOD register at BYTE address 89H
+Bit No.
+ 7
+ 6
+ 5
+ 4
+ 3
+ 2
+ 1
+ 0
+Timer:
+ T1
+ T0
+Bit Name
+ G1 C/T1 T1M1 T1M0 G0 C/T0 T0M1
+ T0M0
+• The TR0 and TR1 flags in the TCON register (at address 88H) enabletimer to run, when set.
+is
+is
+a
+• The C/T flags in the TMOD register (at address 89H) decide whether event
+counter operation (flag set) or timer operation (flag cleared) will be used.
+(TMOD is not bit addressable).
+2
+• The Gate flags in TMOD decide whether counting will be gated by the
+corresponding external interrupt pin in P3. If the Gate Flag is cleared, the
+counter is enabled by the TR flag alone. If the Gate flag is set, counting also
+requires the corresponding external interrupt pin in P3 to be HIGH. This is
+useful for measuring pulse widths.
+Osc %12
+Timer
+Input Pin
+Control
+To
+Counter
+TR Flag
+Gate
+Flag
+Int
+Pin
+Various control registers for timers are placed in the SFR area as shown below:
+Reg. Name
+ Address
+ Function
+TCON
+ 88H
+ Timer status
+TMOD
+ 89H
+ Timer modes and Config
+TL0
+ 8AH
+ T0 count register: Low
+TL1
+ 8BH
+ T1 count register: Low
+TH0
+ 8CH
+ T0 count register: High
+TH1
+ 8DH
+ T1 count register: High
+2.1
+ Timer modes
+The timers may operate in one of four modes:
+Mode 0 In this mode, the timers act as 13 bit counters. This mode is largely
+meant for providing compatibility with an older microcontroller from intel
+(8048). This mode is practically never used in fresh designs. Except for the
+counter size, this mode is identical to mode 1.
+Mode 1 In this mode, the timers are 16 bits in size. This is a commonly used
+mode. It is common to configure the timer to cause an interrupt when it
+overflows. The interrupt routine then reloads the timer.
+Mode 2 This mode provides an 8 bit counter with auto-reload. It uses the high
+byte of the count register to store the count value and the low byte as the
+actual counter. The counter is automatically re-loaded from TH when it
+overflows. Thus, there is no software overhead for re-loading the registers.
+This is convenient for generating baud rates etc. The timing resolution is
+3
+much lower in this mode (only 8 bits). Therefore crystal frequencies have
+to be carefully chosen to generate accurate baud rates. Crystals of 11.059
+MHz are often used rather than 12 MHz for this reason.
+Mode 3 In this mode Timers T0 and T1 behave quite differently. T0 acts as two
+independent 8 bit counters. Count register TL0 uses the resources (such as
+the RUN flag, overflow flag) in TCON, TMOD etc. meant for T0. Similarly,
+TH0 uses the resources meant for T1. Thus, TR1 will enable running the 8
+bit counter made up of TH0. TF1 will be set whenever TH0 overflows.
+T1 now has no control bits at all! It can only be used for services which
+require no control, no gating and no interrupts. Thus, T1 can be used for
+Baud rate generation, while we still have two timers available (both with 8
+bit resolution).
+3
+ Enabling Timer Interrupts
+SFR IE at byte address A8H contains flags which allow an interrupt to occur
+whenever a timer overflows.
+Bit No.
+ 7
+ 6
+ 5
+ 4
+ 3
+ 2
+ 1
+ 0
+Bit Addr
+ AF
+ AE
+ AD
+ AC
+ AB
+ AA
+ A9
+ A8
+Bit Name
+ EA
+ -
+ -
+ ES
+ ET1
+ EX1
+ ET0
+ EX0
+Interrupt on
+ IE
+ U
+ U
+ SI
+ TF1
+ Ex1
+ TF0
+ Ex0
+The most significant bit of the register is a global interrupt enable flag. This bit
+must be set in order to enable any interrupt. Bit 5 is used by 8052 for the third
+timer available in 8052. Bit 3 should be set to enable interrupts from Timer 1
+overflow. Bit 1 enables interrupts from Timer 0 when it overflows.
+3.1
+ Interrupt Vectors for Timers
+When an interrupt occurs, the updated PC is pushed on the stack and is loaded
+with the vector address corresponding to the interrupt. The following table gives
+the vector addresses. The order of entries in the table is also the order in which
+the 8051 will poll these in case of multiple interrupts.
+Interrupt Source
+ Vector address
+External Interrupt 0
+ 0003H
+Timer 0 Overflow
+ 000BH
+External Interrupt 1
+ 0013H
+Timer 1 Overflow
+ 001BH
+Serial Interface
+ 0023H
+4
+8051 starts executing from address 0000H at power-up or reset. The first 3 bytes
+are typically used for placing a long jump instruction to start of the code area.
+The interrupt vectors start from 0003 and are separated by 8 bytes from each
+other. Many simple interrupt handlers can be accommodated in this space. (For
+example, re-loading of counts after timer overflow). Otherwise, jump instructions
+(to handler locations) need to be placed at the vector addresses. This is quite
+similar to the RST handlers for 8085.
+Thus, to enable interrupts from T0, we have to do
+SetB
+ EA
+ ;(or SetB IE.7) to enable interrupts
+SetB
+ ET0
+ ;(or SetB IE.1) to enable interrupts from T0
+After this, whenever T0 overflows, TF0 will be set (in SFR TCON), the currently
+running program will be interrupted, its PC value will be put on the stack (PC-L
+first, PC-H after – because the stack grows upwards in 8051), and PC will be
+loaded with 000B H. The interrupt handler for T0 should be placed here, andshould end with the instruction:
+RETI
+4
+ Initializing Timer Counts
+Timers count up and set their flags when they go from max. count to 0000.
+Therefore, it is more convenient to think of the initial count as negative numbers.
+Suppose we want the timer to time out after 10 mS and we are using a 12 MHz
+crystal. Since the timer is incremented at fosc/12 = 1MHz, each count cycle isμs in duration. So, we need a count time of 10,000 cycles. We should therefore
+initialise the count to -10,000.
+Since 10,000 = 39*256+16 = 2710H,
+-10000 = 2’s complement of 2710 = D8F0.
+Another way to think about it is that the overflow count is actually 10000H. So
+we should subtract the required count from this and initialize the count to the
+difference. Thus, the initial count in the above example should be:
+10000
+- 2710
+------
+= D8F0
+------
+Either way, we get the same result.
+it
+1
+5
+5
+ Reading Timer Counts
+Since the current count is in two bytes, we have to read these sequentially. This
+presents a problem - because by the time we go to read the second byte, the first
+one may have changed. For example, suppose the count is 04FF. We do:
+MOV R0, TL0
+and get FF in R0. However, one machine cycle has passed, so the count reaches
+0500. Therefore, if we do
+MOV R1, TH0
+we shall get 05 in R1. Thus we can be misled into thinking that the count is
+actually 05FF. This problem had been tackled in 8253 and 8254 by the “Latch
+Counter” commands. This command would copy the count to a latch while the
+counter could continue operating. The latch could then be read safely. This com-
+mand does not exist in an 8051. So how do we solve this problem?
+One way is to read the high byte of the timer, then read the low byte, then
+read the high byte again. If the high byte read the second time is not the same as
+the high byte read the first time, one must repeat the cycle. In code, this would
+appear as:
+READT0:
+MOV A,TH0
+MOV R0,TL0
+CJNE A,TH0,READT0
+Another way is to freeze the counter by clearing its RUN bit, read its value
+and then start it again by setting the RUN bit. Of course, you might miss a few
+counts this way - but at least the timer value won’t be grossly wrong.
+6
+ Use of gating
+Gating is useful when we want an external source to start or stop the timer. If
+the gate bit in TMOD is set, the timer would be enabled only if the corresponding
+external interrupt pin is high. This can be used to measure pulse widths, by
+appling the pulse to the external interrupt pin. This can be understood by the
+circuit given earlier:
